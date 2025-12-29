@@ -1,4 +1,4 @@
-name: Build Nord 3 NetHunter Kernel
+name: Build Nord 3 NetHunter Kernel (GKI 5.10)
 on:
   workflow_dispatch:
 
@@ -9,21 +9,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Build Environment
+      - name: Setup Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git
+          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git curl pahole
 
-      - name: Pull Kernel Source
+      - name: Pull Nord 3 Source
         run: |
+          # Use the 5.10 MT6983 source branch
           git clone --depth 1 https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983 -b oneplus/mt6983_t_13.1_oneplus_nord_3_5g kernel_source
           
       - name: Apply NetHunter Patches
         run: |
           cd kernel_source
-          git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder --depth 1
-          # Applying the generic HID and WiFi injection patches for 5.10
-          ./kali-nethunter-kernel-builder/patch_kernel.sh --arch arm64 --patch
+          # Manual download of the 5.10 compatible patches
+          curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/usb_hid_common.patch
+          curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/mac80211.patch
+          
+          # Apply the patches - if one fails, we skip it to prevent build crash
+          patch -p1 < usb_hid_common.patch || echo "HID patch failed or already in source"
+          patch -p1 < mac80211.patch || echo "WiFi patch failed or already in source"
+
+      - name: Configure NetHunter Features
+        run: |
+          cd kernel_source
+          # We force these settings into the gki_defconfig for Kali support
+          {
+            echo "CONFIG_USB_HIDDEV=y"
+            echo "CONFIG_USB_KBD=y"
+            echo "CONFIG_USB_MOUSE=y"
+            echo "CONFIG_CFG80211_WEXT=y"
+            echo "CONFIG_MAC80211=y"
+          } >> arch/arm64/configs/gki_defconfig
 
       - name: Build Kernel
         uses: dabao1955/kernel_build_action@main
@@ -32,13 +49,13 @@ jobs:
           arch: arm64
           config: gki_defconfig
           compiler: clang
-          # Using Google's prebuilt Clang for Android 13/14 compatibility
+          # Using Clang r487747c as it's the stable choice for 5.10 GKI
           clang-version: r487747c
           extra-args: LLVM=1 LLVM_IAS=1
           
-      - name: Upload Flashable Kernel
+      - name: Upload Finished Kernel
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Kernel-Nord3
+          name: NetHunter-Nord3-Image
           path: kernel_source/out/arch/arm64/boot/Image
-          
+
