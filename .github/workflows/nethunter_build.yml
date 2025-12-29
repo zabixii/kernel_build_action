@@ -12,28 +12,29 @@ jobs:
       - name: Build NetHunter Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          # Use the GKI 5.10 Source for Nord 3 (Dimensity 9000)
+          # Device: OnePlus Nord 3 (vit) - Dimensity 9000 (MT6983)
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
           config: gki_defconfig
           arch: arm64
           
-          # Compiler Settings
+          # Compiler Config (Fixes your "AOSP GCC is required" error)
           android-version: 15
+          aosp-gcc: true
           aosp-clang: true
           aosp-clang-version: r487747c
           
-          # NetHunter Specifics (Built-in Patching)
+          # NetHunter Specifics
           nethunter: true
           nethunter-patch: true
           
-          # Packaging
+          # Auto-packaging
           anykernel3: true
           extra-make-args: LLVM=1 LLVM_IAS=1
           
       - name: Upload Flashable NetHunter Zip
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Nord3-vit
+          name: NetHunter-Nord3-Kernel
           path: build/*.zip
 
