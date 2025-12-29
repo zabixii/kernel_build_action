@@ -1,0 +1,44 @@
+name: Build Nord 3 NetHunter Kernel
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git
+
+      - name: Pull Kernel Source
+        run: |
+          git clone --depth 1 https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983 -b oneplus/mt6983_t_13.1_oneplus_nord_3_5g kernel_source
+          
+      - name: Apply NetHunter Patches
+        run: |
+          cd kernel_source
+          git clone https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder --depth 1
+          # Applying the generic HID and WiFi injection patches for 5.10
+          ./kali-nethunter-kernel-builder/patch_kernel.sh --arch arm64 --patch
+
+      - name: Build Kernel
+        uses: dabao1955/kernel_build_action@main
+        with:
+          kernel-directory: kernel_source
+          arch: arm64
+          config: gki_defconfig
+          compiler: clang
+          # Using Google's prebuilt Clang for Android 13/14 compatibility
+          clang-version: r487747c
+          extra-args: LLVM=1 LLVM_IAS=1
+          
+      - name: Upload Flashable Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetHunter-Kernel-Nord3
+          path: kernel_source/out/arch/arm64/boot/Image
+          
