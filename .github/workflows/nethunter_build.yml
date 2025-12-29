@@ -23,10 +23,10 @@ jobs:
           other-clang-url: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/r487747c/clang-r487747c.tar.gz
           other-clang-branch: main
 
-          # NetHunter core (HID & USB Wi-Fi)
+          # NetHunter core (max hardware-supported features)
           nethunter: true
           nethunter-patch: false
 
           # Packaging
           anykernel3: true
-          extra-make-args: ["LLVM=1", "LLVM_IAS=1"]
+          extra-make-args: LLVM=1 LLVM_IAS=1
