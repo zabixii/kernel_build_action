@@ -18,8 +18,8 @@ jobs:
           config: gki_defconfig
           arch: arm64
           
-          # Compiler Config (Fixes your "AOSP GCC is required" error)
-          android-version: 15
+          # Stable Toolchain (Fixes the "android15-release not found" error)
+          android-version: 14
           aosp-gcc: true
           aosp-clang: true
           aosp-clang-version: r487747c
