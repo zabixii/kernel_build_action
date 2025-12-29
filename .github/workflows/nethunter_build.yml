@@ -1,4 +1,4 @@
-name: Build Nord 3 NetHunter Kernel (GKI 5.10)
+name: Nord 3 NetHunter Build (Android 16)
 on:
   workflow_dispatch:
 
@@ -6,56 +6,60 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Environment
+      - name: Install Build Essentials
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git curl pahole
+          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu \
+          gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git curl pahole zip
 
-      - name: Pull Nord 3 Source
+      - name: Pull Official OnePlus Source
         run: |
-          # Use the 5.10 MT6983 source branch
-          git clone --depth 1 https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983 -b oneplus/mt6983_t_13.1_oneplus_nord_3_5g kernel_source
+          git clone --depth 1 https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983 \
+          -b oneplus/mt6983_v_15.0.0_nord_3 kernel_source
           
-      - name: Apply NetHunter Patches
+      - name: Apply Kali NetHunter Patches
         run: |
           cd kernel_source
-          # Manual download of the 5.10 compatible patches
           curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/usb_hid_common.patch
           curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/mac80211.patch
-          
-          # Apply the patches - if one fails, we skip it to prevent build crash
-          patch -p1 < usb_hid_common.patch || echo "HID patch failed or already in source"
-          patch -p1 < mac80211.patch || echo "WiFi patch failed or already in source"
+          # Apply patches; ignore errors if code is already present in source
+          patch -p1 --ignore-whitespace < usb_hid_common.patch || true
+          patch -p1 --ignore-whitespace < mac80211.patch || true
 
-      - name: Configure NetHunter Features
+      - name: Inject NetHunter Configs
         run: |
           cd kernel_source
-          # We force these settings into the gki_defconfig for Kali support
           {
             echo "CONFIG_USB_HIDDEV=y"
             echo "CONFIG_USB_KBD=y"
             echo "CONFIG_USB_MOUSE=y"
             echo "CONFIG_CFG80211_WEXT=y"
             echo "CONFIG_MAC80211=y"
+            echo "CONFIG_LIRC=y"
           } >> arch/arm64/configs/gki_defconfig
 
-      - name: Build Kernel
+      - name: Compile GKI Kernel
         uses: dabao1955/kernel_build_action@main
         with:
           kernel-directory: kernel_source
           arch: arm64
           config: gki_defconfig
           compiler: clang
-          # Using Clang r487747c as it's the stable choice for 5.10 GKI
           clang-version: r487747c
           extra-args: LLVM=1 LLVM_IAS=1
           
-      - name: Upload Finished Kernel
+      - name: Create AnyKernel3 Zip
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3
+          cp kernel_source/out/arch/arm64/boot/Image AnyKernel3/
+          cd AnyKernel3 && zip -r ../NetHunter-Nord3-Kernel.zip ./*
+
+      - name: Upload Flashable Kernel
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Nord3-Image
-          path: kernel_source/out/arch/arm64/boot/Image
+          name: NetHunter-Flashable-Zip
+          path: NetHunter-Nord3-Kernel.zip
 
