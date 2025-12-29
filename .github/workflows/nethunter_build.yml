@@ -9,57 +9,31 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Build Essentials
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison build-essential flex gcc-aarch64-linux-gnu \
-          gcc-arm-linux-gnueabi libssl-dev libncurses5-dev git curl pahole zip
-
-      - name: Pull Official OnePlus Source
-        run: |
-          git clone --depth 1 https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983 \
-          -b oneplus/mt6983_v_15.0.0_nord_3 kernel_source
-          
-      - name: Apply Kali NetHunter Patches
-        run: |
-          cd kernel_source
-          curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/usb_hid_common.patch
-          curl -LO https://gitlab.com/kalilinux/nethunter/build-scripts/kali-nethunter-kernel-builder/-/raw/main/patches/mac80211.patch
-          # Apply patches; ignore errors if code is already present in source
-          patch -p1 --ignore-whitespace < usb_hid_common.patch || true
-          patch -p1 --ignore-whitespace < mac80211.patch || true
-
-      - name: Inject NetHunter Configs
-        run: |
-          cd kernel_source
-          {
-            echo "CONFIG_USB_HIDDEV=y"
-            echo "CONFIG_USB_KBD=y"
-            echo "CONFIG_USB_MOUSE=y"
-            echo "CONFIG_CFG80211_WEXT=y"
-            echo "CONFIG_MAC80211=y"
-            echo "CONFIG_LIRC=y"
-          } >> arch/arm64/configs/gki_defconfig
-
-      - name: Compile GKI Kernel
+      - name: Build NetHunter Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          kernel-directory: kernel_source
-          arch: arm64
+          # Use the GKI 5.10 Source for Nord 3 (Dimensity 9000)
+          kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
+          kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
           config: gki_defconfig
-          compiler: clang
-          clang-version: r487747c
-          extra-args: LLVM=1 LLVM_IAS=1
+          arch: arm64
           
-      - name: Create AnyKernel3 Zip
-        run: |
-          git clone https://github.com/osm0sis/AnyKernel3
-          cp kernel_source/out/arch/arm64/boot/Image AnyKernel3/
-          cd AnyKernel3 && zip -r ../NetHunter-Nord3-Kernel.zip ./*
-
-      - name: Upload Flashable Kernel
+          # Compiler Settings
+          android-version: 15
+          aosp-clang: true
+          aosp-clang-version: r487747c
+          
+          # NetHunter Specifics (Built-in Patching)
+          nethunter: true
+          nethunter-patch: true
+          
+          # Packaging
+          anykernel3: true
+          extra-make-args: LLVM=1 LLVM_IAS=1
+          
+      - name: Upload Flashable NetHunter Zip
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Flashable-Zip
-          path: NetHunter-Nord3-Kernel.zip
+          name: NetHunter-Nord3-vit
+          path: build/*.zip
 
