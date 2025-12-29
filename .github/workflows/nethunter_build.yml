@@ -1,40 +1,60 @@
-name: Nord 3 NetHunter Build (Android 16)
+name: Nord 3 NetHunter Kernel (Android 16)
+
 on:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      # --------------------------------------------------
+      # 1. Checkout repository
+      # --------------------------------------------------
+      - name: Checkout
         uses: actions/checkout@v4
 
+      # --------------------------------------------------
+      # 2. Build NetHunter GKI kernel
+      # --------------------------------------------------
       - name: Build NetHunter Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          # Device: OnePlus Nord 3 (vit) - Dimensity 9000 (MT6983)
+          # Device / source
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
-          config: gki_defconfig
           arch: arm64
-          
-          # Stable Toolchain (Fixes the "android15-release not found" error)
+          config: gki_defconfig
+
+          # --------------------------------------------------
+          # Toolchain (CLANG ONLY — IMPORTANT)
+          # --------------------------------------------------
           android-version: 14
-          aosp-gcc: true
           aosp-clang: true
           aosp-clang-version: r487747c
-          
-          # NetHunter Specifics
+          aosp-gcc: false
+
+          extra-make-args: |
+            LLVM=1
+            LLVM_IAS=1
+            CC=clang
+
+          # --------------------------------------------------
+          # NetHunter
+          # --------------------------------------------------
           nethunter: true
           nethunter-patch: true
-          
-          # Auto-packaging
+
+          # --------------------------------------------------
+          # Packaging
+          # --------------------------------------------------
           anykernel3: true
-          extra-make-args: LLVM=1 LLVM_IAS=1
-          
-      - name: Upload Flashable NetHunter Zip
+
+      # --------------------------------------------------
+      # 3. Upload flashable ZIP
+      # --------------------------------------------------
+      - name: Upload Kernel ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Nord3-Kernel
+          name: NetHunter-Nord3-vit-GKI
           path: build/*.zip
-
