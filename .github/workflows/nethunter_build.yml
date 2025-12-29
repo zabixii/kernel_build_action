@@ -5,29 +5,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Build NetHunter Kernel
-        uses: dabao1955/kernel_build_action@main
+        uses: zabixii/kernel_build_action@main
         with:
-          # Device
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
           config: gki_defconfig
           arch: arm64
 
-          # Compiler (THIS IS THE KEY)
-          android-version: 13          # 🔥 MUST be 13
-          aosp-gcc: false              # 🚫 Do NOT download GCC
-          aosp-clang: true             # ✅ Select Clang
-          aosp-clang-version: r487747c
+          # Use custom Clang toolchain (bypass broken AOSP logic)
+          aosp-gcc: false
+          aosp-clang: false
+          other-clang-url: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/r487747c/clang-r487747c.tar.gz
+          other-clang-branch: main
 
-          # NetHunter (safe)
+          # NetHunter core (HID & USB Wi-Fi)
           nethunter: true
-          nethunter-patch: false       # avoid broken wifi patches
+          nethunter-patch: false
 
           # Packaging
           anykernel3: true
-          extra-make-args: LLVM=1 LLVM_IAS=1
+          extra-make-args: ["LLVM=1", "LLVM_IAS=1"]
