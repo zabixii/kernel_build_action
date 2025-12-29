@@ -6,22 +6,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
 
+    steps:
+      # Step 1: Checkout your repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Build NetHunter Kernel
       - name: Build NetHunter Kernel
         uses: zabixii/kernel_build_action@main
         with:
+          # Kernel source
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
           config: gki_defconfig
           arch: arm64
 
-          # Bypass AOSP logic
+          # Toolchain: use working Google Clang tarball
           aosp-gcc: false
           aosp-clang: false
-
-          # Use working Google Clang tarball
           other-clang-url: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
           other-clang-branch: main
 
@@ -29,6 +32,13 @@ jobs:
           nethunter: true
           nethunter-patch: false
 
-          # Packaging
+          # Packaging for flashing
           anykernel3: true
           extra-make-args: ["LLVM=1", "LLVM_IAS=1"]
+
+      # Step 3: Upload the flashable zip
+      - name: Upload Final Flashable Zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetHunter-Nord3-vit-Installer
+          path: build/*.zip
