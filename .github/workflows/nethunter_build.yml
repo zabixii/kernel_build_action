@@ -1,4 +1,4 @@
-name: Nord 3 NetHunter Kernel (Android 16)
+name: Nord 3 NetHunter Build (Android 16)
 
 on:
   workflow_dispatch:
@@ -6,55 +6,35 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # --------------------------------------------------
-      # 1. Checkout repository
-      # --------------------------------------------------
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # --------------------------------------------------
-      # 2. Build NetHunter GKI kernel
-      # --------------------------------------------------
       - name: Build NetHunter Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          # Device / source
+          # Device
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
-          arch: arm64
           config: gki_defconfig
+          arch: arm64
 
-          # --------------------------------------------------
-          # Toolchain (CLANG ONLY — IMPORTANT)
-          # --------------------------------------------------
+          # TOOLCHAIN (WORKING)
           android-version: 14
-          aosp-clang: true
-          aosp-clang-version: r487747c
           aosp-gcc: false
+          aosp-clang: false   # 🔥 DISABLED
+          use-llvm: true      # ✅ USE PREBUILT LLVM
 
-          extra-make-args: |
-            LLVM=1
-            LLVM_IAS=1
-            CC=clang
-
-          # --------------------------------------------------
           # NetHunter
-          # --------------------------------------------------
           nethunter: true
           nethunter-patch: true
 
-          # --------------------------------------------------
           # Packaging
-          # --------------------------------------------------
           anykernel3: true
+          extra-make-args: LLVM=1 LLVM_IAS=1
 
-      # --------------------------------------------------
-      # 3. Upload flashable ZIP
-      # --------------------------------------------------
-      - name: Upload Kernel ZIP
+      - name: Upload Final Flashable Zip
         uses: actions/upload-artifact@v4
         with:
-          name: NetHunter-Nord3-vit-GKI
+          name: NetHunter-Nord3-vit-Installer
           path: build/*.zip
