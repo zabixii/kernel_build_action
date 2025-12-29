@@ -17,16 +17,18 @@ jobs:
           config: gki_defconfig
           arch: arm64
 
-          # Bypass broken AOSP GCC logic
+          # Bypass AOSP logic
           aosp-gcc: false
           aosp-clang: false
-          other-clang-url: https://mirrors.aliyun.com/android.googlesource.com.bak/prebuilts/clang/host/linux-x86/clang-r487747c/bin/
+
+          # Use working Google Clang tarball
+          other-clang-url: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
           other-clang-branch: main
 
-          # NetHunter core
+          # NetHunter features
           nethunter: true
           nethunter-patch: false
 
           # Packaging
           anykernel3: true
-          extra-make-args: LLVM=1 LLVM_IAS=1
+          extra-make-args: ["LLVM=1", "LLVM_IAS=1"]
