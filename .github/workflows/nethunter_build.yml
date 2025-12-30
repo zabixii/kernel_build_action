@@ -8,35 +8,33 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Step 1: Checkout your repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Build NetHunter Kernel
       - name: Build NetHunter Kernel
         uses: zabixii/kernel_build_action@main
         with:
-          # Kernel source
           kernel-url: https://github.com/OnePlusOSS/android_kernel_5.10_oneplus_mt6983
           kernel-branch: oneplus/mt6983_v_15.0.0_nord_3
           config: gki_defconfig
           arch: arm64
 
-          # Toolchain: use working Google Clang tarball
+          # Toolchain (tarball, NOT git)
           aosp-gcc: false
           aosp-clang: false
           other-clang-url: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
           other-clang-branch: main
 
-          # NetHunter features
+          # NetHunter
           nethunter: true
           nethunter-patch: false
 
-          # Packaging for flashing
+          # Packaging
           anykernel3: true
-          extra-make-args: ["LLVM=1", "LLVM_IAS=1"]
 
-      # Step 3: Upload the flashable zip
+          # MUST be a STRING containing JSON
+          extra-make-args: '["LLVM=1","LLVM_IAS=1"]'
+
       - name: Upload Final Flashable Zip
         uses: actions/upload-artifact@v4
         with:
